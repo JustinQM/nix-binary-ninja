@@ -21,8 +21,8 @@
   wayland,
   python3,
   libxml2,
-  xcb-util-wm,
-  xcb-util-keysyms,
+  xcbutilwm,
+  xcbutilkeysyms,
   curl,
   binaryNinjaEdition ? "personal",
   forceWayland ? false,
@@ -67,8 +67,8 @@ stdenv.mkDerivation {
     dbus
     wayland
     libxml2.out
-    xcb-util-wm
-    xcb-util-keysyms
+    xcbutilwm
+    xcbutilkeysyms
     curl
   ];
   autoPatchelfIgnoreMissingDeps = [
