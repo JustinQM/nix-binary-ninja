@@ -64,6 +64,16 @@ stdenv.mkDerivation {
     dbus
     wayland
     libxml2.out
+    xcb-util-wm
+    xcb-util-keysyms
+    curl
+  ];
+  autoPatchelfIgnoreMissingDeps = [
+    "libQt6ShaderTools.so.6"
+    "libQt6QuickVectorImageGenerator.so.6"
+    "libQt6Quick.so.6"
+    "libQt6Qml.so.6"
+    "libQt6PrintSupport.so.6"
   ];
   pythonDeps = [ python3.pkgs.pip ];
   appendRunpaths = [ "${lib.getLib python3}/lib" ];
