@@ -19,10 +19,8 @@
   dbus,
   libxkbcommon,
   wayland,
-  kdePackages,
   python3,
   libxml2,
-
   binaryNinjaEdition ? "personal",
   forceWayland ? false,
   overrideSource ? null,
@@ -51,7 +49,6 @@ stdenv.mkDerivation {
     auto-patchelf
     autoPatchelfHook
     python3.pkgs.wrapPython
-    kdePackages.wrapQtAppsHook
     copyDesktopItems
   ];
   buildInputs = [
@@ -63,9 +60,6 @@ stdenv.mkDerivation {
     libxrender
     libxcb-image
     libxcb-render-util
-    kdePackages.qtbase
-    kdePackages.qtdeclarative
-    kdePackages.qtwayland
     libxkbcommon
     dbus
     wayland
@@ -73,13 +67,7 @@ stdenv.mkDerivation {
   ];
   pythonDeps = [ python3.pkgs.pip ];
   appendRunpaths = [ "${lib.getLib python3}/lib" ];
-  qtWrapperArgs = lib.optionals forceWayland [
-    "--set"
-    "QT_QPA_PLATFORM"
-    "wayland"
-  ];
   buildPhase = ":";
-
   desktopItems = [
     (makeDesktopItem {
       name = "Binary Ninja";
@@ -90,44 +78,37 @@ stdenv.mkDerivation {
       categories = [ "Development" ];
     })
   ];
-
   installPhase = ''
     runHook preInstall
-
     mkdir -p $out/bin
     mkdir -p $out/opt/binaryninja
     mkdir -p $out/share/pixmaps
     cp -r * $out/opt/binaryninja
-    find $out/opt/binaryninja \
-      -type f \
-      -name '*.so' -or -name '*.so.*' \
-      -not -name '*.bntl' \
-      -not -name 'libbinaryninjacore.so.*' \
-      -not -name 'libbinaryninjaui.so.*' \
-      -not -name 'liblldb.so.*' \
-      -not -name 'libshiboken6.abi*.so.*' \
-      -not -name 'libpyside6.abi*.so.*' \
-      -delete
+
+    addAutoPatchelfSearchPath "$out/opt/binaryninja"
+    addAutoPatchelfSearchPath "$out/opt/binaryninja/plugins"
+    addAutoPatchelfSearchPath "$out/opt/binaryninja/plugins/lldb/lib"
+    addAutoPatchelfSearchPath "$out/opt/binaryninja/qt/platforms"
+    addAutoPatchelfSearchPath "$out/opt/binaryninja/qt/xcbglintegrations"
+    addAutoPatchelfSearchPath "$out/opt/binaryninja/qt/imageformats"
+    addAutoPatchelfSearchPath "$out/opt/binaryninja/qt/wayland-decoration-client"
+    addAutoPatchelfSearchPath "$out/opt/binaryninja/qt/wayland-graphics-integration-client"
+    addAutoPatchelfSearchPath "$out/opt/binaryninja/qt/wayland-shell-integration"
+    addAutoPatchelfSearchPath "$out/opt/binaryninja/python3/PySide6"
+    addAutoPatchelfSearchPath "$out/opt/binaryninja/python3/shiboken6"
+
     cp ${desktopIcon} $out/share/pixmaps/binaryninja.png
     chmod +x $out/opt/binaryninja/binaryninja
     buildPythonPath "$pythonDeps"
     makeWrapper $out/opt/binaryninja/binaryninja $out/bin/binaryninja \
       --prefix PYTHONPATH : "$program_PYTHONPATH" \
-      "''${qtWrapperArgs[@]}"
-
+      ${lib.optionalString forceWayland "--set QT_QPA_PLATFORM wayland"}
     runHook postInstall
   '';
-
-  # libxml2 soname changes now follow ABI breaks.
-  # https://gitlab.gnome.org/GNOME/libxml2/-/issues/751
-  # This is of course ultimately good, but we can't recompile binja
-  # So let's just force it to use whatever NixOS has. It's Probably Fine™
   preFixup = ''
     patchelf $out/opt/binaryninja/plugins/lldb/lib/liblldb.so.* \
       --replace-needed libxml2.so.2 libxml2.so
   '';
-
-  dontWrapQtApps = true;
   meta = {
     mainProgram = "binaryninja";
   };
